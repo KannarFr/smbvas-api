@@ -10,33 +10,36 @@ import play.api.libs.json._
 import java.util.UUID
 import scala.util.{Try, Success, Failure}
 import play.api.Logger
-import models.user_module.User
 import play.api.libs.Files._
 import java.nio.file._
 import java.io._
-import java.time.Instant
+import java.time.ZonedDateTime
 import scala.util.matching.Regex
+
+import models.user_module.User
+import models.cellar_module._
 import utils.Configuration
 
 object resource_module {
     case class Resource(
         uuid: UUID,
         category: Option[String],
+        label: Option[String],
+        description: Option[String],
         color: Option[String],
         lat: Double,
         lng: Double,
-        path: Option[String],
-        creation_date: Int,
-        deletion_date: Option[Int],
-        edition_date: Option[Int],
-        managed_date: Option[Int],
+        creation_date: ZonedDateTime,
+        deletion_date: Option[ZonedDateTime],
+        edition_date: Option[ZonedDateTime],
+        managed_date: Option[ZonedDateTime],
         validator: Option[User]
     )
 
     sealed abstract class ResourceError
     case object ResourceAlreadyPresent extends ResourceError
     case object ResourceDoesNotExists extends ResourceError
-    case object ResourceCantBeMoved extends ResourceError
+    case object ResourceFileCantBeStored extends ResourceError
     case object ResourceHasntContentType extends ResourceError
     case object ResourceContentTypeIsNotValid extends ResourceError
     case object ResourceDAOFailure extends ResourceError
@@ -48,36 +51,45 @@ object resource_module {
             val tableName = "resources"
 
             val columns = List(
-                PgField("uuid"), PgField("category"), PgField("color"), PgField("lat"),
-                PgField("lng"), PgField("path"), PgField("creation_date"), PgField("deletion_date"),
-                PgField("edition_date"), PgField("managed_date"), PgField("validator")
+                PgField("uuid"), PgField("category"), PgField("label"),
+                PgField("description"), PgField("color"), PgField("lat"),
+                PgField("lng"), PgField("creation_date"),
+                PgField("deletion_date"), PgField("edition_date"),
+                PgField("managed_date"), PgField("validator")
             )
 
             def parser(prefix: String): RowParser[Resource] = {
                 get[UUID]("uuid") ~
                 get[Option[String]]("category") ~
+                get[Option[String]]("label") ~
+                get[Option[String]]("description") ~
                 get[Option[String]]("color") ~
                 get[Double]("lat") ~
                 get[Double]("lng") ~
-                get[Option[String]]("path") ~
-                get[Int]("creation_date") ~
-                get[Option[Int]]("deletion_date") ~
-                get[Option[Int]]("edition_date") ~
-                get[Option[Int]]("managed_date") ~
+                get[ZonedDateTime]("creation_date") ~
+                get[Option[ZonedDateTime]]("deletion_date") ~
+                get[Option[ZonedDateTime]]("edition_date") ~
+                get[Option[ZonedDateTime]]("managed_date") ~
                 get[JsValue]("validator_js") map {
                     case (
-                        uuid ~ category ~ color ~ lat ~ lng ~ path ~ creation_date ~
-                        deletion_date ~ edition_date ~ managed_date ~ validator_js
+                        uuid ~ category ~ label ~ description ~ color ~ lat ~ lng ~
+                        creation_date ~ deletion_date ~ edition_date ~
+                        managed_date ~ validator_js
                     ) => Resource(
-                        uuid, category, color, lat, lng, path, creation_date, deletion_date,
-                        edition_date, managed_date, validator = validator_js.asOpt[User]
+                        uuid, category, label, description, color, lat, lng,
+                        creation_date, deletion_date, edition_date, managed_date,
+                        validator = validator_js.asOpt[User]
                     )
                 }
             }
         }
     }
 
-    class ResourceDTO @Inject()(resourceDAO: ResourceDAO, configuration: Configuration) {
+    class ResourceDTO @Inject()(
+        resourceDAO: ResourceDAO,
+        cellarDTO: CellarDTO,
+        configuration: Configuration
+    ) {
         import Resource._
 
         def processFile(
@@ -86,15 +98,14 @@ object resource_module {
             checkContentType(contentType) match {
                 case Left(e) => Left(e)
                 case Right(contentType) => {
-                    moveResourceFileTo(uuid, ref, configuration.resource.path) match {
-                        case Left(e) => Left(e)
-                        case Right(newRef) => {
+                    cellarDTO.createResourceFile(uuid, ref) match {
+                        case Left(e) => Left(ResourceFileCantBeStored)
+                        case Right(_) => {
                             resourceDAO.getResourceById(uuid) match {
                                 case Some(resource) => { 
                                     val newResource = resource.copy(
                                         category = Some(contentType),
-                                        path = Some(newRef.path.toString),
-                                        edition_date = Some(Instant.now.getEpochSecond.toInt)
+                                        edition_date = Some(ZonedDateTime.now)
                                     )
                                     resourceDAO.patchResource(newResource)
                                 }
@@ -118,19 +129,6 @@ object resource_module {
                         }
                     }              
                 }                        
-            }
-        }
-
-        def moveResourceFileTo(uuid: UUID, ref: TemporaryFile, to: String): Either[ResourceError, TemporaryFile] = {
-            Try {
-                ref.moveTo(new File(s"${to}/${uuid.toString}"))
-            } match {
-                case Failure(e) => {
-                    Logger.info(s"Can't move to " + Paths.get(s"${to}/${uuid.toString}").toAbsolutePath.toString)
-                    e.printStackTrace
-                    Left(ResourceCantBeMoved)
-                }
-                case Success(newFile) => Right(newFile)
             }
         }
     }
@@ -162,10 +160,11 @@ object resource_module {
                 SQL(updateSQL[Resource](List("uuid", "creation_date"))).on(
                     'uuid -> resource.uuid,
                     'category -> resource.category,
+                    'label -> resource.label,
+                    'description -> resource.description,
                     'color -> resource.color,
                     'lat -> resource.lat,
                     'lng -> resource.lng,
-                    'path -> resource.path,
                     'creation_date -> resource.creation_date,
                     'deletion_date -> resource.deletion_date,
                     'edition_date -> resource.edition_date,
@@ -188,10 +187,11 @@ object resource_module {
                 SQL(insertSQL[Resource]).on(
                     'uuid -> resource.uuid,
                     'category -> resource.category,
+                    'label -> resource.label,
+                    'description -> resource.description,
                     'color -> resource.color,
                     'lat -> resource.lat,
                     'lng -> resource.lng,
-                    'path -> resource.path,
                     'creation_date -> resource.creation_date,
                     'deletion_date -> resource.deletion_date,
                     'edition_date -> resource.edition_date,

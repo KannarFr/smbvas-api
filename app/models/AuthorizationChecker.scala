@@ -2,22 +2,37 @@ package models
 
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
+import javax.inject._
+import java.time.ZonedDateTime
+import java.util.UUID
+
+import scala.concurrent.Future
+
+import play.api.libs.json.Json
+import play.api.libs.ws._
 import play.api.Logger
 
-object AuthorizationChecker { 
-    def generateHMAC(message: String, key: String): String = {
-        val secret = new SecretKeySpec(key.getBytes, "HmacSHA256")
-        val mac = Mac.getInstance("HmacSHA256")
-        mac.init(secret)
-        val hashString: Array[Byte] = mac.doFinal(message.getBytes)
-        new String(hashString.map(_.toChar))
-    }
+import utils.Configuration
 
-    def check(application: String, token: String, timestamp: String, signature: String): Boolean = {
-        val message = application + token + timestamp
-        val hmac = generateHMAC(message, token)
-        Logger.debug(signature)
-        Logger.debug(hmac)
-        signature == hmac
+class AuthorizationChecker @Inject()(
+    conf: Configuration,
+    ws: WSClient
+) {
+    def check(
+        method: String,
+        url: String,
+        uuid: UUID,
+        timestamp: ZonedDateTime,
+        signature: String
+    ): Future[WSResponse] = {
+        ws
+            .url(s"${conf.authProvider.url}/check")
+            .post(Json.obj(
+                "method" -> method,
+                "url" -> url,
+                "userId" -> uuid.toString,
+                "date" -> timestamp.toString,
+                "signature" -> signature
+            ))
     }
 }

@@ -1,13 +1,18 @@
 package controllers
 
 import javax.inject._
+import java.time.ZonedDateTime
+import java.util.UUID
+
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
+
 import play.api._
 import play.api.mvc._
 import play.api.mvc.Results._
 import play.api.libs.json._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.ExecutionContext
+
 import models.user_module._
 import models.AuthorizationChecker
 
@@ -15,31 +20,33 @@ import models.AuthorizationChecker
 class AuthenticatedAction @Inject()(
     env: Environment,
     parser: BodyParsers.Default,
-    ec: ExecutionContext
+    implicit val ec: ExecutionContext,
+    authChecker: AuthorizationChecker
 ) extends ActionBuilderImpl(parser) {
     override def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]) = {
-        implicit val context = ec
         if (env.mode == Mode.Dev) {
             block(request)
         } else {
             (for {
-                application <- request.headers.get("X-API-Application")
-                token <- request.headers.get("X-API-Token")
-                timestamp <- request.headers.get("X-API-Timestamp")
-                signature <- request.headers.get("X-API-Signature")
+                uuid <- request.headers.get("X-SMBVAS-UserId")
+                timestamp <- request.headers.get("X-SMBVAS-Timestamp")
+                signature <- request.headers.get("X-SMBVAS-Signature")
             } yield {
-                if (AuthorizationChecker.check(
-                    application,
-                    token,
-                    timestamp,
+                val requestAuth = authChecker.check(
+                    request.method,
+                    request.uri,
+                    UUID.fromString(uuid),
+                    ZonedDateTime.parse(timestamp),
                     signature
-                )) {
-                    Logger.info(s"Access granted to ${application}-${timestamp} using ${token}")
-                    block(request)
-                } else {
-                    Future(Forbidden)(ec)
-                }
-            }).getOrElse(Future(Unauthorized)(ec))
+                )
+                requestAuth.flatMap(res => {
+                    if (res.status == 200) {
+                        block(request)
+                    } else {
+                        Future(Unauthorized(res.body))
+                    }
+                }).fallbackTo(Future(InternalServerError))
+            }).getOrElse(Future(Unauthorized))
         }
     }
 }

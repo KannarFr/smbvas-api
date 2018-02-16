@@ -47,7 +47,7 @@ object user_module {
     class UserDAO @Inject()(db: Database) {
         import User._
         
-        def getUsers(): List[User] = db.withConnection { implicit c =>
+        def getUsers: List[User] = db.withConnection { implicit c =>
             SQL(selectSQL[User]) as (parser[User]().*)
         }
 

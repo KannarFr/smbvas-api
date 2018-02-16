@@ -5,20 +5,24 @@ import play.api._
 import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.json._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Try, Success, Failure}
 import java.util.UUID
+
+import models.cellar_module._
 import models.resource_module._
 import models.resource_module.Resource._
 
 @Singleton
 class ResourceController @Inject()(
+  cellarDTO: CellarDTO,
   cc: ControllerComponents,
+  implicit val ec: ExecutionContext,
   resourceDAO: ResourceDAO,
   resourceDTO: ResourceDTO,
   authenticatedAction: AuthenticatedAction
 ) extends AbstractController(cc) {
-  def getResources = authenticatedAction.async { implicit request: Request[AnyContent] =>
+  def getResources = Action.async { implicit request: Request[AnyContent] =>
     Future {
       Ok(Json.toJson(resourceDAO.getResources))
     }
@@ -26,7 +30,14 @@ class ResourceController @Inject()(
 
   def getResourceById(uuid: String) = authenticatedAction.async { implicit request =>
     Future {
-      Ok(Json.toJson(resourceDAO.getResourceById(UUID.fromString(uuid))))
+      cellarDTO.getResourceUrl(UUID.fromString(uuid)) match {
+        case Right(url) => {
+          Ok(Json.toJson(resourceDAO.getResourceById(UUID.fromString(uuid))))
+        }
+        case Left(_) => {
+          BadRequest
+        }
+      }
     }
   }
 
