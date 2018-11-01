@@ -8,5 +8,3 @@ GET     /users                      controllers.UserController.getUsers
 GET     /users/:uuid                controllers.UserController.getUserById(uuid: String)
 POST    /users                      controllers.UserController.create
 PATCH   /users/:uuid                controllers.UserController.patchUserById(uuid: String)
-
-GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
