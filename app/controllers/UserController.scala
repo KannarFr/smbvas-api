@@ -1,20 +1,24 @@
 package controllers
 
+import java.util.UUID
 import javax.inject._
+
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
 import play.api._
 import play.api.mvc._
 import play.api.libs.json._
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-import java.util.UUID
+
 import models.user_module._
 import models.user_module.User._
 
 @Singleton
 class UserController @Inject()(
+  authenticatedAction: AuthenticatedAction,
   cc: ControllerComponents,
-  userDAO: UserDAO,
-  authenticatedAction: AuthenticatedAction
+  implicit val executionContext: ExecutionContext,
+  userDAO: UserDAO
 ) extends AbstractController(cc) {
   def getUsers = authenticatedAction.async { implicit request: Request[AnyContent] =>
     Future(Ok(Json.toJson(userDAO.getUsers)))
