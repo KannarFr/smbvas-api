@@ -17,18 +17,14 @@ class UserController @Inject()(
   authenticatedAction: AuthenticatedAction
 ) extends AbstractController(cc) {
   def getUsers = authenticatedAction.async { implicit request: Request[AnyContent] =>
-    Future {
-      Ok(Json.toJson(userDAO.getUsers))
-    }
+    Future(Ok(Json.toJson(userDAO.getUsers)))
   }
 
-  def getUserById(uuid: String) = authenticatedAction.async { implicit request =>
-    Future {
-      Ok(Json.toJson(userDAO.getUserById(UUID.fromString(uuid))))
-    }
+  def getUserById(userId: UUID) = authenticatedAction.async { implicit request =>
+    Future(Ok(Json.toJson(userDAO.getUserById(userId))))
   }
 
-  def patchUserById(uuid: String) = authenticatedAction.async(parse.json[User]) { implicit request =>
+  def patchUserById(userId: UUID) = authenticatedAction.async(parse.json[User]) { implicit request =>
     Future {
       val user = request.body
       userDAO.patchUser(user) match {

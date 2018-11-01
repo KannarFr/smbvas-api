@@ -3,8 +3,6 @@ organization := "com.orangeade.smbvas"
 
 version := "1.0-SNAPSHOT"
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala)
-
 scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
@@ -16,3 +14,9 @@ libraryDependencies ++= Seq(
     "org.postgresql" % "postgresql" % "42.2.1",
     "com.amazonaws" % "aws-java-sdk-s3" % "1.9.3"
 )
+
+lazy val root = (project in file(".")).enablePlugins(PlayScala)
+
+import play.sbt.routes.RoutesKeys
+
+RoutesKeys.routesImport ++= Seq("java.util.UUID")

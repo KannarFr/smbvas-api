@@ -1,10 +1,10 @@
-GET     /resources                  controllers.ResourceController.getResources
-GET     /resources/:uuid            controllers.ResourceController.getResourceById(uuid: String)
-POST    /resources                  controllers.ResourceController.create
-PATCH   /resources/:uuid            controllers.ResourceController.patchResourceById(uuid: String)
-POST    /resources/:uuid/upload     controllers.ResourceController.uploadResourceContentToResourceId(uuid: String)
+GET     /resources                    controllers.ResourceController.getResources
+GET     /resources/:resourceId        controllers.ResourceController.getResourceById(resourceId: UUID)
+POST    /resources                    controllers.ResourceController.create
+PATCH   /resources/:resourceId        controllers.ResourceController.patchResourceById(resourceId: UUID)
+POST    /resources/:resourceId/upload controllers.ResourceController.uploadResourceContentToResourceId(resourceId: UUID)
 
-GET     /users                      controllers.UserController.getUsers
-GET     /users/:uuid                controllers.UserController.getUserById(uuid: String)
-POST    /users                      controllers.UserController.create
-PATCH   /users/:uuid                controllers.UserController.patchUserById(uuid: String)
+GET     /users         controllers.UserController.getUsers
+GET     /users/:userId controllers.UserController.getUserById(userId: UUID)
+POST    /users         controllers.UserController.create
+PATCH   /users/:userId controllers.UserController.patchUserById(userId: UUID)

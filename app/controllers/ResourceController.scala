@@ -25,25 +25,23 @@ class ResourceController @Inject()(
   authenticatedAction: AuthenticatedAction
 ) extends AbstractController(cc) {
   def getResources = Action.async { implicit request: Request[AnyContent] =>
-    Future {
-      Ok(Json.toJson(resourceDAO.getResources))
-    }
+    Future(Ok(Json.toJson(resourceDAO.getResources)))
   }
 
-  def getResourceById(uuid: String) = authenticatedAction.async { implicit request =>
+  def getResourceById(resourceId: UUID) = authenticatedAction.async { implicit request =>
+    Future(Ok(Json.toJson(resourceDAO.getResourceById(resourceId))))
+  }
+
+  def getResourceFileUrlById(resourceId: UUID) = authenticatedAction.async { implicit request =>
     Future {
-      cellarDTO.getResourceUrl(UUID.fromString(uuid)) match {
-        case Right(url) => {
-          Ok(Json.toJson(resourceDAO.getResourceById(UUID.fromString(uuid))))
-        }
-        case Left(_) => {
-          BadRequest
-        }
+      cellarDTO.getResourceUrl(resourceId) match {
+        case Right(url) => Ok(Json.toJson(url))
+        case Left(_) => NotFound
       }
     }
   }
 
-  def patchResourceById(uuid: String) = authenticatedAction.async(parse.json[Resource]) { implicit request =>
+  def patchResourceById(resourceId: UUID) = authenticatedAction.async(parse.json[Resource]) { implicit request =>
     Future {
       val resource = request.body
       resourceDAO.patchResource(resource) match {
@@ -64,11 +62,11 @@ class ResourceController @Inject()(
     }
   }
 
-  def uploadResourceContentToResourceId(uuid: String) = authenticatedAction.async(parse.multipartFormData) { implicit request =>
+  def uploadResourceContentToResourceId(resourceId: UUID) = authenticatedAction.async(parse.multipartFormData) { implicit request =>
     Future {
       request.body.file("resource") match {
         case Some(FilePart(key, filename, contentType, ref)) => {
-          resourceDTO.processFile(UUID.fromString(uuid), key, filename, contentType, ref) match {
+          resourceDTO.processFile(resourceId, key, filename, contentType, ref) match {
             case Left(_) => InternalServerError
             case Right(resource) => Created
           }
