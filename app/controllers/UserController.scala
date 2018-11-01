@@ -28,7 +28,7 @@ class UserController @Inject()(
     }
   }
 
-  def patchUserById(uuid: String) = authenticatedAction.async(parse.json[User]) { implicit request => 
+  def patchUserById(uuid: String) = authenticatedAction.async(parse.json[User]) { implicit request =>
     Future {
       val user = request.body
       userDAO.patchUser(user) match {

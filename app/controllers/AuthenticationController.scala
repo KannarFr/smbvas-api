@@ -18,35 +18,35 @@ import models.AuthorizationChecker
 
 @Singleton
 class AuthenticatedAction @Inject()(
-    env: Environment,
-    parser: BodyParsers.Default,
-    implicit val ec: ExecutionContext,
-    authChecker: AuthorizationChecker
+  env: Environment,
+  parser: BodyParsers.Default,
+  implicit val ec: ExecutionContext,
+  authChecker: AuthorizationChecker
 ) extends ActionBuilderImpl(parser) {
-    override def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]) = {
-        if (env.mode == Mode.Dev) {
+  override def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]) = {
+    if (env.mode == Mode.Dev) {
+      block(request)
+    } else {
+      (for {
+        uuid <- request.headers.get("X-SMBVAS-UserId")
+        timestamp <- request.headers.get("X-SMBVAS-Timestamp")
+        signature <- request.headers.get("X-SMBVAS-Signature")
+      } yield {
+        val requestAuth = authChecker.check(
+          request.method,
+          request.uri,
+          UUID.fromString(uuid),
+          ZonedDateTime.parse(timestamp),
+          signature
+        )
+        requestAuth.flatMap(res => {
+          if (res.status == 200) {
             block(request)
-        } else {
-            (for {
-                uuid <- request.headers.get("X-SMBVAS-UserId")
-                timestamp <- request.headers.get("X-SMBVAS-Timestamp")
-                signature <- request.headers.get("X-SMBVAS-Signature")
-            } yield {
-                val requestAuth = authChecker.check(
-                    request.method,
-                    request.uri,
-                    UUID.fromString(uuid),
-                    ZonedDateTime.parse(timestamp),
-                    signature
-                )
-                requestAuth.flatMap(res => {
-                    if (res.status == 200) {
-                        block(request)
-                    } else {
-                        Future(Unauthorized(res.body))
-                    }
-                }).fallbackTo(Future(InternalServerError))
-            }).getOrElse(Future(Unauthorized))
-        }
+          } else {
+            Future(Unauthorized(res.body))
+          }
+        }).fallbackTo(Future(InternalServerError))
+      }).getOrElse(Future(Unauthorized))
     }
+  }
 }

@@ -15,24 +15,24 @@ import play.api.Logger
 import utils.Configuration
 
 class AuthorizationChecker @Inject()(
-    conf: Configuration,
-    ws: WSClient
+  conf: Configuration,
+  ws: WSClient
 ) {
-    def check(
-        method: String,
-        url: String,
-        uuid: UUID,
-        timestamp: ZonedDateTime,
-        signature: String
-    ): Future[WSResponse] = {
-        ws
-            .url(s"${conf.authProvider.url}/check")
-            .post(Json.obj(
-                "method" -> method,
-                "url" -> url,
-                "userId" -> uuid.toString,
-                "date" -> timestamp.toString,
-                "signature" -> signature
-            ))
-    }
+  def check(
+    method: String,
+    url: String,
+    uuid: UUID,
+    timestamp: ZonedDateTime,
+    signature: String
+  ): Future[WSResponse] = {
+    ws
+      .url(s"${conf.authProvider.url}/check")
+      .post(Json.obj(
+        "method" -> method,
+        "url" -> url,
+        "userId" -> uuid.toString,
+        "date" -> timestamp.toString,
+        "signature" -> signature
+      ))
+  }
 }
