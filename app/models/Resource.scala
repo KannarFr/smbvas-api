@@ -23,17 +23,19 @@ import utils.Configuration
 object resource_module {
   case class Resource(
     uuid: UUID,
-    category: Option[String],
+    `type`: Option[String],
     label: Option[String],
     description: Option[String],
     color: Option[String],
     lat: Double,
     lng: Double,
+    date: ZonedDateTime,
+    url: Option[String],
+    size: Option[Double],
     creation_date: ZonedDateTime,
     deletion_date: Option[ZonedDateTime],
     edition_date: Option[ZonedDateTime],
-    managed_date: Option[ZonedDateTime],
-    validator: Option[User]
+    validator: UUID
   )
 
   sealed abstract class ResourceError
@@ -51,34 +53,45 @@ object resource_module {
       val tableName = "resources"
 
       val columns = List(
-        PgField("uuid"), PgField("category"), PgField("label"),
-        PgField("description"), PgField("color"), PgField("lat"),
-        PgField("lng"), PgField("creation_date"),
-        PgField("deletion_date"), PgField("edition_date"),
-        PgField("managed_date"), PgField("validator")
+        PgField("uuid"),
+        PgField("type"),
+        PgField("label"),
+        PgField("description"),
+        PgField("color"),
+        PgField("lat"),
+        PgField("lng"),
+        PgField("date"),
+        PgField("url"),
+        PgField("size"),
+        PgField("creation_date"),
+        PgField("deletion_date"),
+        PgField("edition_date"),
+        PgField("validator")
       )
 
       def parser(prefix: String): RowParser[Resource] = {
         get[UUID]("uuid") ~
-        get[Option[String]]("category") ~
+        get[Option[String]]("type") ~
         get[Option[String]]("label") ~
         get[Option[String]]("description") ~
         get[Option[String]]("color") ~
         get[Double]("lat") ~
         get[Double]("lng") ~
+        get[ZonedDateTime]("date") ~
+        get[Option[String]]("url") ~
+        get[Option[Double]]("size") ~
         get[ZonedDateTime]("creation_date") ~
         get[Option[ZonedDateTime]]("deletion_date") ~
         get[Option[ZonedDateTime]]("edition_date") ~
-        get[Option[ZonedDateTime]]("managed_date") ~
-        get[JsValue]("validator_js") map {
+        get[UUID]("validator") map {
           case (
-            uuid ~ category ~ label ~ description ~ color ~ lat ~ lng ~
-            creation_date ~ deletion_date ~ edition_date ~
-            managed_date ~ validator_js
+            uuid ~ typ ~ label ~ description ~ color ~ lat ~ lng ~
+            date ~ url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
+            validator
           ) => Resource(
-            uuid, category, label, description, color, lat, lng,
-            creation_date, deletion_date, edition_date, managed_date,
-            validator = validator_js.asOpt[User]
+            uuid, typ, label, description, color, lat, lng,
+            date, url, size, creation_date, deletion_date, edition_date,
+            validator
           )
         }
       }
@@ -104,7 +117,7 @@ object resource_module {
               resourceDAO.getResourceById(uuid) match {
                 case Some(resource) => {
                   val newResource = resource.copy(
-                    category = Some(contentType),
+                    `type` = Some(contentType),
                     edition_date = Some(ZonedDateTime.now)
                   )
                   resourceDAO.patchResource(newResource)
@@ -158,18 +171,18 @@ object resource_module {
     def patchResource(resource: Resource): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
         SQL(updateSQL[Resource](List("uuid", "creation_date"))).on(
-          'uuid -> resource.uuid,
-          'category -> resource.category,
+          'type -> resource.`type`,
           'label -> resource.label,
           'description -> resource.description,
           'color -> resource.color,
           'lat -> resource.lat,
           'lng -> resource.lng,
-          'creation_date -> resource.creation_date,
+          'date -> resource.date,
+          'url -> resource.url,
+          'size -> resource.size,
           'deletion_date -> resource.deletion_date,
           'edition_date -> resource.edition_date,
-          'managed_date -> resource.managed_date,
-          'validator -> resource.validator.get.uuid
+          'validator -> resource.validator
         ).executeUpdate
         ()
       } match {
@@ -186,17 +199,19 @@ object resource_module {
       Try {
         SQL(insertSQL[Resource]).on(
           'uuid -> resource.uuid,
-          'category -> resource.category,
+          'type -> resource.`type`,
           'label -> resource.label,
           'description -> resource.description,
           'color -> resource.color,
           'lat -> resource.lat,
           'lng -> resource.lng,
+          'date -> resource.date,
+          'url -> resource.url,
+          'size -> resource.size,
           'creation_date -> resource.creation_date,
           'deletion_date -> resource.deletion_date,
           'edition_date -> resource.edition_date,
-          'managed_date -> resource.managed_date,
-          'validator -> resource.validator.get.uuid
+          'validator -> resource.validator
         ).executeUpdate
         ()
       } match {

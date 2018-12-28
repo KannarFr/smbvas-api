@@ -15,8 +15,7 @@ object user_module {
   case class User(
     uuid: UUID,
     email: String,
-    password: String,
-    creation_date: Int
+    password: String
   )
 
   sealed abstract class UserError
@@ -29,16 +28,15 @@ object user_module {
       val tableName = "users"
 
       val columns = List(
-        PgField("uuid"), PgField("email"), PgField("password"),PgField("creation_date")
+        PgField("uuid"), PgField("email"), PgField("password")
       )
 
       def parser(prefix: String): RowParser[User] = {
         get[UUID]("uuid") ~
         get[String]("email") ~
-        get[String]("password") ~
-        get[Int]("creation_date") map {
-          case (uuid ~ email ~ password ~ creation_date) =>
-            User(uuid, email, password, creation_date)
+        get[String]("password") map {
+          case (uuid ~ email ~ password) =>
+            User(uuid, email, password)
         }
       }
     }
@@ -59,8 +57,7 @@ object user_module {
 
     def patchUser(user: User): Either[UserError, Unit] = db.withConnection { implicit c =>
       Try {
-        SQL(updateSQL[User](List("uuid", "creation_date"))).on(
-          'uuid -> user.uuid,
+        SQL(updateSQL[User](List("uuid"))).on(
           'email -> user.email,
           'password -> user.password
         ).executeUpdate
@@ -80,9 +77,8 @@ object user_module {
         SQL(insertSQL[User]).on(
           'uuid -> user.uuid,
           'email -> user.email,
-          'password -> user.password,
-          'creation_date -> user.creation_date
-        ).executeUpdate
+          'password -> user.password
+        ).execute
         ()
       } match {
         case Failure(e: org.postgresql.util.PSQLException) => {
