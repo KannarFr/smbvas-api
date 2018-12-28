@@ -1,5 +1,5 @@
 name := """smbvas-api"""
-organization := "com.orangeade.smbvas"
+organization := "com.smbvas.api"
 
 version := "1.0-SNAPSHOT"
 
