@@ -13,7 +13,7 @@ import play.api.Logger
 
 object user_module {
   case class User(
-    uuid: UUID,
+    id: UUID,
     email: String,
     password: String
   )
@@ -28,15 +28,15 @@ object user_module {
       val tableName = "user"
 
       val columns = List(
-        PgField("uuid"), PgField("email"), PgField("password")
+        PgField("id"), PgField("email"), PgField("password")
       )
 
       def parser(prefix: String): RowParser[User] = {
-        get[UUID]("uuid") ~
+        get[UUID]("id") ~
         get[String]("email") ~
         get[String]("password") map {
-          case (uuid ~ email ~ password) =>
-            User(uuid, email, password)
+          case (id ~ email ~ password) =>
+            User(id, email, password)
         }
       }
     }
@@ -49,15 +49,15 @@ object user_module {
       SQL(selectSQL[User]) as (parser[User]().*)
     }
 
-    def getUserById(uuid: UUID): Option[User] = db.withConnection { implicit c =>
-      SQL(selectSQL[User] + " WHERE uuid = {uuid}").on(
-        'uuid -> uuid
+    def getUserById(id: UUID): Option[User] = db.withConnection { implicit c =>
+      SQL(selectSQL[User] + " WHERE id = {id}").on(
+        'id -> id
       ).as(parser[User]().singleOpt)
     }
 
     def patchUser(user: User): Either[UserError, Unit] = db.withConnection { implicit c =>
       Try {
-        SQL(updateSQL[User](List("uuid"))).on(
+        SQL(updateSQL[User](List("id"))).on(
           'email -> user.email,
           'password -> user.password
         ).executeUpdate
@@ -75,7 +75,7 @@ object user_module {
     def create(user: User): Either[UserError, Unit] = db.withConnection { implicit c =>
       Try {
         SQL(insertSQL[User]).on(
-          'uuid -> user.uuid,
+          'id -> user.id,
           'email -> user.email,
           'password -> user.password
         ).execute

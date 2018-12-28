@@ -22,7 +22,7 @@ import utils.Configuration
 
 object resource_module {
   case class Resource(
-    uuid: UUID,
+    id: UUID,
     `type`: Option[String],
     label: Option[String],
     description: Option[String],
@@ -53,7 +53,7 @@ object resource_module {
       val tableName = "resource"
 
       val columns = List(
-        PgField("uuid"),
+        PgField("id"),
         PgField("type"),
         PgField("label"),
         PgField("description"),
@@ -70,7 +70,7 @@ object resource_module {
       )
 
       def parser(prefix: String): RowParser[Resource] = {
-        get[UUID]("uuid") ~
+        get[UUID]("id") ~
         get[Option[String]]("type") ~
         get[Option[String]]("label") ~
         get[Option[String]]("description") ~
@@ -85,11 +85,11 @@ object resource_module {
         get[Option[ZonedDateTime]]("edition_date") ~
         get[UUID]("validator") map {
           case (
-            uuid ~ typ ~ label ~ description ~ color ~ lat ~ lng ~
+            id ~ typ ~ label ~ description ~ color ~ lat ~ lng ~
             date ~ url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
             validator
           ) => Resource(
-            uuid, typ, label, description, color, lat, lng,
+            id, typ, label, description, color, lat, lng,
             date, url, size, creation_date, deletion_date, edition_date,
             validator
           )
@@ -106,15 +106,15 @@ object resource_module {
     import Resource._
 
     def processFile(
-      uuid: UUID, key: String, filename: String, contentType: Option[String], ref: TemporaryFile
+      id: UUID, key: String, filename: String, contentType: Option[String], ref: TemporaryFile
     ): Either[ResourceError, Unit] = {
       checkContentType(contentType) match {
         case Left(e) => Left(e)
         case Right(contentType) => {
-          cellarDTO.createResourceFile(uuid, ref) match {
+          cellarDTO.createResourceFile(id, ref) match {
             case Left(e) => Left(ResourceFileCantBeStored)
             case Right(_) => {
-              resourceDAO.getResourceById(uuid) match {
+              resourceDAO.getResourceById(id) match {
                 case Some(resource) => {
                   val newResource = resource.copy(
                     `type` = Some(contentType),
@@ -153,24 +153,24 @@ object resource_module {
       SQL(s"""
         SELECT r.*, row_to_json(u.*) as validator_js
         FROM users u, resources r
-        WHERE r.validator = u.uuid
+        WHERE r.validator = u.id
       """) as (parser[Resource]().*)
     }
 
-    def getResourceById(uuid: UUID): Option[Resource] = db.withConnection { implicit c =>
+    def getResourceById(id: UUID): Option[Resource] = db.withConnection { implicit c =>
       SQL(s"""
         SELECT r.*, row_to_json(u.*) as validator_js
         FROM users u, resources r
-        WHERE r.validator = u.uuid
-        AND r.uuid = {uuid}
+        WHERE r.validator = u.id
+        AND r.id = {id}
       """).on(
-        'uuid -> uuid
+        'id -> id
       ).as(parser[Resource]().singleOpt)
     }
 
     def patchResource(resource: Resource): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
-        SQL(updateSQL[Resource](List("uuid", "creation_date"))).on(
+        SQL(updateSQL[Resource](List("id", "creation_date"))).on(
           'type -> resource.`type`,
           'label -> resource.label,
           'description -> resource.description,
@@ -198,7 +198,7 @@ object resource_module {
     def create(resource: Resource): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
         SQL(insertSQL[Resource]).on(
-          'uuid -> resource.uuid,
+          'id -> resource.id,
           'type -> resource.`type`,
           'label -> resource.label,
           'description -> resource.description,
