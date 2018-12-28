@@ -1,6 +1,6 @@
 # --- !Ups
 
-create table user(
+create table "user"(
   id uuid primary key,
   email text,
   "password" text
@@ -20,10 +20,10 @@ create table resource(
   creation_date timestamptz,
   edition_date timestamptz,
   deletion_date timestamptz,
-  validator uuid references user(id)
+  validator uuid references "user"(id)
 );
 
 # --- !Downs
 
-drop table resource;
-drop table user;
+drop table "resource";
+drop table "user";
