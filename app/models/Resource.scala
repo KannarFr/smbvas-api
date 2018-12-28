@@ -50,7 +50,7 @@ object resource_module {
   object Resource {
     implicit val resourceFormat = Json.format[Resource]
     implicit val resourcePgEntity: PgEntity[Resource] = new PgEntity[Resource] {
-      val tableName = "resources"
+      val tableName = "resource"
 
       val columns = List(
         PgField("uuid"),

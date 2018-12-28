@@ -25,7 +25,7 @@ object user_module {
   object User {
     implicit val userFormat = Json.format[User]
     implicit val userPgEntity: PgEntity[User] = new PgEntity[User] {
-      val tableName = "users"
+      val tableName = "user"
 
       val columns = List(
         PgField("uuid"), PgField("email"), PgField("password")
