@@ -150,20 +150,11 @@ object resource_module {
     import Resource._
 
     def getResources(): List[Resource] = db.withConnection { implicit c =>
-      SQL(s"""
-        SELECT r.*, row_to_json(u.*) as validator_js
-        FROM users u, resources r
-        WHERE r.validator = u.id
-      """) as (parser[Resource]().*)
+      SQL(selectSQL[Resource]) as (parser[Resource]().*)
     }
 
     def getResourceById(id: UUID): Option[Resource] = db.withConnection { implicit c =>
-      SQL(s"""
-        SELECT r.*, row_to_json(u.*) as validator_js
-        FROM users u, resources r
-        WHERE r.validator = u.id
-        AND r.id = {id}
-      """).on(
+      SQL(selectSQL[Resource] + " WHERE id = {id}").on(
         'id -> id
       ).as(parser[Resource]().singleOpt)
     }
