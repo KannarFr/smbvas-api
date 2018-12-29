@@ -32,14 +32,13 @@ class AuthenticatedAction @Inject()(
         timestamp <- request.headers.get("X-SMBVAS-Timestamp")
         signature <- request.headers.get("X-SMBVAS-Signature")
       } yield {
-        val requestAuth = authChecker.check(
+        authChecker.check(
           request.method,
           request.uri,
           UUID.fromString(uuid),
           ZonedDateTime.parse(timestamp),
           signature
-        )
-        requestAuth.flatMap(res => {
+        ).flatMap(res => {
           if (res.status == 200) {
             block(request)
           } else {
