@@ -22,22 +22,25 @@ import utils.Configuration
 
 object resource_module {
   case class WannabeResource(
-    label: Option[String],
+    label: String,
     description: Option[String],
-    date: ZonedDateTime,
-    lat: Double,
-    lng: Double
+    date: Option[ZonedDateTime],
+    lat: Option[Double],
+    lng: Option[Double],
+    providerContact: Option[String]
   )
 
   case class Resource(
     id: UUID,
     `type`: Option[String] = None,
-    label: Option[String],
+    label: String,
     description: Option[String],
     color: Option[String] = None,
-    lat: Double,
-    lng: Double,
-    date: ZonedDateTime,
+    lat: Option[Double],
+    lng: Option[Double],
+    status: String,
+    date: Option[ZonedDateTime],
+    providerContact: Option[String],
     url: Option[String] = None,
     size: Option[Double] = None,
     creation_date: ZonedDateTime,
@@ -70,7 +73,9 @@ object resource_module {
         PgField("color"),
         PgField("lat"),
         PgField("lng"),
+        PgField("status"),
         PgField("date"),
+        PgField("provider_contact"),
         PgField("url"),
         PgField("size"),
         PgField("creation_date"),
@@ -82,12 +87,14 @@ object resource_module {
       def parser(prefix: String): RowParser[Resource] = {
         get[UUID]("id") ~
         get[Option[String]]("type") ~
-        get[Option[String]]("label") ~
+        get[String]("label") ~
         get[Option[String]]("description") ~
         get[Option[String]]("color") ~
-        get[Double]("lat") ~
-        get[Double]("lng") ~
-        get[ZonedDateTime]("date") ~
+        get[Option[Double]]("lat") ~
+        get[Option[Double]]("lng") ~
+        get[String]("status") ~
+        get[Option[ZonedDateTime]]("date") ~
+        get[Option[String]]("provider_contact") ~
         get[Option[String]]("url") ~
         get[Option[Double]]("size") ~
         get[ZonedDateTime]("creation_date") ~
@@ -95,12 +102,12 @@ object resource_module {
         get[Option[ZonedDateTime]]("edition_date") ~
         get[Option[UUID]]("validator") map {
           case (
-            id ~ typ ~ label ~ description ~ color ~ lat ~ lng ~
-            date ~ url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
+            id ~ typ ~ label ~ description ~ color ~ lat ~ lng ~ status ~
+            date ~ providerContact ~ url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
             validator
           ) => Resource(
-            id, typ, label, description, color, lat, lng,
-            date, url, size, creation_date, deletion_date, edition_date,
+            id, typ, label, description, color, lat, lng, status,
+            date, providerContact, url, size, creation_date, deletion_date, edition_date,
             validator
           )
         }
@@ -178,7 +185,9 @@ object resource_module {
           'color -> resource.color,
           'lat -> resource.lat,
           'lng -> resource.lng,
+          'status -> resource.status,
           'date -> resource.date,
+          'provider_contact -> resource.providerContact,
           'url -> resource.url,
           'size -> resource.size,
           'deletion_date -> resource.deletion_date,
@@ -203,7 +212,9 @@ object resource_module {
         description = wannabeResource.description,
         lat = wannabeResource.lat,
         lng = wannabeResource.lng,
+        status = "CREATED", // TO BE FIXED BY ENUM
         date = wannabeResource.date,
+        providerContact = wannabeResource.providerContact,
         creation_date = ZonedDateTime.now
       )
       Try {
@@ -213,7 +224,9 @@ object resource_module {
           'description -> resource.description,
           'lat -> resource.lat,
           'lng -> resource.lng,
+          'status -> resource.status,
           'date -> resource.date,
+          'provider_contact -> resource.providerContact,
           'creation_date -> resource.creation_date
         ).executeUpdate
         resource
