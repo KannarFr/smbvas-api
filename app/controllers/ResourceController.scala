@@ -13,7 +13,6 @@ import play.api.libs.json._
 
 import models.cellar_module._
 import models.resource_module._
-import models.resource_module.Resource._
 
 @Singleton
 class ResourceController @Inject()(
@@ -28,18 +27,18 @@ class ResourceController @Inject()(
     Future(Ok(Json.toJson(resourceDAO.getResources)))
   }
 
-  def getResourceById(resourceId: UUID) = authenticatedAction.async { implicit request =>
+  def getResourceById(resourceId: UUID) = Action.async { implicit request =>
     Future(Ok(Json.toJson(resourceDAO.getResourceById(resourceId))))
   }
 
-  def getResourceFileUrlById(resourceId: UUID) = authenticatedAction.async { implicit request =>
+  /*def getResourceFileUrlById(resourceId: UUID) = authenticatedAction.async { implicit request =>
     Future {
       cellarDTO.getResourceUrl(resourceId) match {
         case Right(url) => Ok(Json.toJson(url))
         case Left(_) => NotFound
       }
     }
-  }
+  }*/
 
   def patchResourceById(resourceId: UUID) = authenticatedAction.async(parse.json[Resource]) { implicit request =>
     Future {
@@ -51,18 +50,18 @@ class ResourceController @Inject()(
     }
   }
 
-  def create = authenticatedAction.async(parse.json[Resource]) { implicit request =>
+  def create = Action.async(parse.json[WannabeResource]) { implicit request =>
     Future {
       val resource = request.body
       resourceDAO.create(resource) match {
         case Left(ResourceAlreadyPresent) => Status(409)
         case Left(_) => InternalServerError
-        case Right(_) => Created
+        case Right(resource) => Created(Json.toJson(resource))
       }
     }
   }
 
-  def uploadResourceContentToResourceId(resourceId: UUID) = authenticatedAction.async(parse.multipartFormData) { implicit request =>
+  def uploadResourceContentToResourceId(resourceId: UUID) = Action.async(parse.multipartFormData) { implicit request =>
     Future {
       request.body.file("resource") match {
         case Some(FilePart(key, filename, contentType, ref)) => {

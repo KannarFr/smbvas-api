@@ -21,21 +21,29 @@ import models.cellar_module._
 import utils.Configuration
 
 object resource_module {
-  case class Resource(
-    id: UUID,
-    `type`: Option[String],
+  case class WannabeResource(
     label: Option[String],
     description: Option[String],
-    color: Option[String],
+    date: ZonedDateTime,
+    lat: Double,
+    lng: Double
+  )
+
+  case class Resource(
+    id: UUID,
+    `type`: Option[String] = None,
+    label: Option[String],
+    description: Option[String],
+    color: Option[String] = None,
     lat: Double,
     lng: Double,
     date: ZonedDateTime,
-    url: Option[String],
-    size: Option[Double],
+    url: Option[String] = None,
+    size: Option[Double] = None,
     creation_date: ZonedDateTime,
-    deletion_date: Option[ZonedDateTime],
-    edition_date: Option[ZonedDateTime],
-    validator: UUID
+    deletion_date: Option[ZonedDateTime] = None,
+    edition_date: Option[ZonedDateTime] = None,
+    validator: Option[UUID] = None
   )
 
   sealed abstract class ResourceError
@@ -47,8 +55,10 @@ object resource_module {
   case object ResourceDAOFailure extends ResourceError
   case object UnhandledException extends ResourceError
 
+  implicit val wannabeResourceFormat = Json.format[WannabeResource]
+  implicit val resourceFormat = Json.format[Resource]
+
   object Resource {
-    implicit val resourceFormat = Json.format[Resource]
     implicit val resourcePgEntity: PgEntity[Resource] = new PgEntity[Resource] {
       val tableName = "resource"
 
@@ -83,7 +93,7 @@ object resource_module {
         get[ZonedDateTime]("creation_date") ~
         get[Option[ZonedDateTime]]("deletion_date") ~
         get[Option[ZonedDateTime]]("edition_date") ~
-        get[UUID]("validator") map {
+        get[Option[UUID]]("validator") map {
           case (
             id ~ typ ~ label ~ description ~ color ~ lat ~ lng ~
             date ~ url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
@@ -186,25 +196,27 @@ object resource_module {
       }
     }
 
-    def create(resource: Resource): Either[ResourceError, Unit] = db.withConnection { implicit c =>
+    def create(wannabeResource: WannabeResource): Either[ResourceError, Resource] = db.withConnection { implicit c =>
+      val resource = Resource(
+        id = UUID.randomUUID,
+        label = wannabeResource.label,
+        description = wannabeResource.description,
+        lat = wannabeResource.lat,
+        lng = wannabeResource.lng,
+        date = wannabeResource.date,
+        creation_date = ZonedDateTime.now
+      )
       Try {
         SQL(insertSQL[Resource]).on(
           'id -> resource.id,
-          'type -> resource.`type`,
           'label -> resource.label,
           'description -> resource.description,
-          'color -> resource.color,
           'lat -> resource.lat,
           'lng -> resource.lng,
           'date -> resource.date,
-          'url -> resource.url,
-          'size -> resource.size,
-          'creation_date -> resource.creation_date,
-          'deletion_date -> resource.deletion_date,
-          'edition_date -> resource.edition_date,
-          'validator -> resource.validator
+          'creation_date -> resource.creation_date
         ).executeUpdate
-        ()
+        resource
       } match {
         case Failure(e: org.postgresql.util.PSQLException) => {
           if(e.getSQLState == "23505") {
