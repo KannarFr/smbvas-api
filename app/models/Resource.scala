@@ -66,7 +66,7 @@ object resource_module {
       val tableName = "resource"
 
       val columns = List(
-        PgField("id"),
+        PgField("id", Some("uuid"), true),
         PgField("type"),
         PgField("label"),
         PgField("description"),
@@ -81,7 +81,7 @@ object resource_module {
         PgField("creation_date"),
         PgField("deletion_date"),
         PgField("edition_date"),
-        PgField("validator")
+        PgField("validator", Some("uuid"))
       )
 
       def parser(prefix: String): RowParser[Resource] = {
@@ -135,7 +135,9 @@ object resource_module {
                 case Some(resource) => {
                   val newResource = resource.copy(
                     `type` = Some(contentType),
-                    edition_date = Some(ZonedDateTime.now)
+                    edition_date = Some(ZonedDateTime.now),
+                    status = "FILE_UPLOADED", // TODO: TO BE FIXED BY ENUM
+                    url = cellarDTO.getResourceUrl(resource.id).toOption.map(_.toString)
                   )
                   resourceDAO.patchResource(newResource)
                 }
@@ -166,34 +168,44 @@ object resource_module {
   class ResourceDAO @Inject()(db: Database) {
     import Resource._
 
-    def getResources(): List[Resource] = db.withConnection { implicit c =>
-      SQL(selectSQL[Resource]) as (parser[Resource]().*)
+    def getResources: List[Resource] = db.withConnection { implicit c =>
+      SQL(selectSQL[Resource])
+        .as(parser[Resource]().*)
+    }
+
+    def getValidatedResources: List[Resource] = db.withConnection { implicit c =>
+      SQL(selectSQL[Resource] + " WHERE status = {status}")
+        .on('status -> "VALIDATED")
+        .as(parser[Resource]().*)
     }
 
     def getResourceById(id: UUID): Option[Resource] = db.withConnection { implicit c =>
-      SQL(selectSQL[Resource] + " WHERE id = {id}").on(
-        'id -> id
-      ).as(parser[Resource]().singleOpt)
+      SQL(selectSQL[Resource] + " WHERE id = {id}::uuid")
+        .on('id -> id)
+        .as(parser[Resource]().singleOpt)
     }
 
     def patchResource(resource: Resource): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
-        SQL(updateSQL[Resource](List("id", "creation_date"))).on(
-          'type -> resource.`type`,
-          'label -> resource.label,
-          'description -> resource.description,
-          'color -> resource.color,
-          'lat -> resource.lat,
-          'lng -> resource.lng,
-          'status -> resource.status,
-          'date -> resource.date,
-          'provider_contact -> resource.providerContact,
-          'url -> resource.url,
-          'size -> resource.size,
-          'deletion_date -> resource.deletion_date,
-          'edition_date -> resource.edition_date,
-          'validator -> resource.validator
-        ).executeUpdate
+        SQL(updateSQL[Resource](List("creation_date")))
+          .on(
+            'id -> resource.id,
+            'type -> resource.`type`,
+            'label -> resource.label,
+            'description -> resource.description,
+            'color -> resource.color,
+            'lat -> resource.lat,
+            'lng -> resource.lng,
+            'status -> resource.status,
+            'date -> resource.date,
+            'provider_contact -> resource.providerContact,
+            'url -> resource.url,
+            'size -> resource.size,
+            'deletion_date -> resource.deletion_date,
+            'edition_date -> resource.edition_date,
+            'validator -> resource.validator
+          )
+          .executeUpdate
         ()
       } match {
         case Failure(e) => {
@@ -212,23 +224,32 @@ object resource_module {
         description = wannabeResource.description,
         lat = wannabeResource.lat,
         lng = wannabeResource.lng,
-        status = "CREATED", // TO BE FIXED BY ENUM
+        status = "EMPTY", // TODO: TO BE FIXED BY ENUM
         date = wannabeResource.date,
         providerContact = wannabeResource.providerContact,
         creation_date = ZonedDateTime.now
       )
+
       Try {
-        SQL(insertSQL[Resource]).on(
-          'id -> resource.id,
-          'label -> resource.label,
-          'description -> resource.description,
-          'lat -> resource.lat,
-          'lng -> resource.lng,
-          'status -> resource.status,
-          'date -> resource.date,
-          'provider_contact -> resource.providerContact,
-          'creation_date -> resource.creation_date
-        ).executeUpdate
+        SQL(insertSQL[Resource])
+          .on(
+            'id -> resource.id,
+            'type -> resource.`type`,
+            'label -> resource.label,
+            'description -> resource.description,
+            'color -> resource.color,
+            'lat -> resource.lat,
+            'lng -> resource.lng,
+            'status -> resource.status,
+            'date -> resource.date,
+            'provider_contact -> resource.providerContact,
+            'url -> resource.url,
+            'size -> resource.size,
+            'creation_date -> resource.creation_date,
+            'deletion_date -> resource.deletion_date,
+            'edition_date -> resource.edition_date,
+            'validator -> resource.validator
+          ).execute
         resource
       } match {
         case Failure(e: org.postgresql.util.PSQLException) => {

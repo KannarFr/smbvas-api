@@ -27,6 +27,10 @@ class ResourceController @Inject()(
     Future(Ok(Json.toJson(resourceDAO.getResources)))
   }
 
+  def getValidatedResources = Action.async { implicit request: Request[AnyContent] =>
+    Future(Ok(Json.toJson(resourceDAO.getValidatedResources)))
+  }
+
   def getResourceById(resourceId: UUID) = Action.async { implicit request =>
     Future(Ok(Json.toJson(resourceDAO.getResourceById(resourceId))))
   }
@@ -62,15 +66,16 @@ class ResourceController @Inject()(
   }
 
   def uploadResourceContentToResourceId(resourceId: UUID) = Action.async(parse.multipartFormData) { implicit request =>
+    println("yoo")
     Future {
       request.body.file("resource") match {
         case Some(FilePart(key, filename, contentType, ref)) => {
           resourceDTO.processFile(resourceId, key, filename, contentType, ref) match {
-            case Left(_) => InternalServerError
+            case Left(e) => InternalServerError(e.toString)
             case Right(resource) => Created
           }
         }
-        case _ => InternalServerError
+        case _ => InternalServerError("Can't find file in request.")
       }
     }
   }
