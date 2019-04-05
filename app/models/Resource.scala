@@ -27,7 +27,9 @@ object resource_module {
     date: Option[ZonedDateTime],
     lat: Option[Double],
     lng: Option[Double],
-    providerContact: Option[String]
+    providerContact: String,
+    providerFirstName: String,
+    providerLastName: String
   )
 
   case class Resource(
@@ -40,7 +42,9 @@ object resource_module {
     lng: Option[Double],
     status: String,
     date: Option[ZonedDateTime],
-    providerContact: Option[String],
+    providerContact: String,
+    providerFirstName: String,
+    providerLastName: String,
     url: Option[String] = None,
     size: Option[Double] = None,
     creation_date: ZonedDateTime,
@@ -76,6 +80,8 @@ object resource_module {
         PgField("status"),
         PgField("date"),
         PgField("provider_contact"),
+        PgField("provider_firstname"),
+        PgField("provider_lastname"),
         PgField("url"),
         PgField("size"),
         PgField("creation_date"),
@@ -94,7 +100,9 @@ object resource_module {
         get[Option[Double]]("lng") ~
         get[String]("status") ~
         get[Option[ZonedDateTime]]("date") ~
-        get[Option[String]]("provider_contact") ~
+        get[String]("provider_contact") ~
+        get[String]("provider_firstname") ~
+        get[String]("provider_lastname") ~
         get[Option[String]]("url") ~
         get[Option[Double]]("size") ~
         get[ZonedDateTime]("creation_date") ~
@@ -103,11 +111,13 @@ object resource_module {
         get[Option[UUID]]("validator") map {
           case (
             id ~ typ ~ label ~ description ~ color ~ lat ~ lng ~ status ~
-            date ~ providerContact ~ url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
+            date ~ providerContact ~ providerFirstName ~ providerLastName ~
+            url ~ size ~ creation_date ~ deletion_date ~ edition_date ~
             validator
           ) => Resource(
             id, typ, label, description, color, lat, lng, status,
-            date, providerContact, url, size, creation_date, deletion_date, edition_date,
+            date, providerContact, providerFirstName, providerLastName,
+            url, size, creation_date, deletion_date, edition_date,
             validator
           )
         }
@@ -199,6 +209,8 @@ object resource_module {
             'status -> resource.status,
             'date -> resource.date,
             'provider_contact -> resource.providerContact,
+            'provider_firstname -> resource.providerFirstName,
+            'provider_lastname -> resource.providerLastName,
             'url -> resource.url,
             'size -> resource.size,
             'deletion_date -> resource.deletion_date,
@@ -227,6 +239,8 @@ object resource_module {
         status = "EMPTY", // TODO: TO BE FIXED BY ENUM
         date = wannabeResource.date,
         providerContact = wannabeResource.providerContact,
+        providerFirstName = wannabeResource.providerFirstName,
+        providerLastName = wannabeResource.providerLastName,
         creation_date = ZonedDateTime.now
       )
 
@@ -243,6 +257,8 @@ object resource_module {
             'status -> resource.status,
             'date -> resource.date,
             'provider_contact -> resource.providerContact,
+            'provider_firstname -> resource.providerFirstName,
+            'provider_lastname -> resource.providerLastName,
             'url -> resource.url,
             'size -> resource.size,
             'creation_date -> resource.creation_date,
