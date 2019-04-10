@@ -1,3 +1,4 @@
+GET     /resources                    controllers.ResourceController.getResources
 GET     /resources/validated          controllers.ResourceController.getValidatedResources
 GET     /resources/:resourceId        controllers.ResourceController.getResourceById(resourceId: UUID)
 # GET     /resources/:resourceId/file   controllers.ResourceController.getResourceFileUrlById(resourceId: UUID)
