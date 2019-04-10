@@ -14,38 +14,30 @@ import play.api.mvc.Results._
 import play.api.libs.json._
 
 import models.user_module._
-import models.AuthorizationChecker
+import models.token_module._
 
 @Singleton
 class AuthenticatedAction @Inject()(
   env: Environment,
   parser: BodyParsers.Default,
   implicit val ec: ExecutionContext,
-  authChecker: AuthorizationChecker
+  tokenDAO: TokenDAO
 ) extends ActionBuilderImpl(parser) {
   override def invokeBlock[A](request: Request[A], block: (Request[A]) => Future[Result]) = {
     if (env.mode == Mode.Dev) {
       block(request)
     } else {
       (for {
-        uuid <- request.headers.get("X-SMBVAS-UserId")
-        timestamp <- request.headers.get("X-SMBVAS-Timestamp")
-        signature <- request.headers.get("X-SMBVAS-Signature")
+        token <- request.headers.get("X-Token")
       } yield {
-        authChecker.check(
-          request.method,
-          request.uri,
-          UUID.fromString(uuid),
-          ZonedDateTime.parse(timestamp),
-          signature
-        ).flatMap(res => {
-          if (res.status == 200) {
+        tokenDAO.getTokenByValue(UUID.fromString(token)).map { token =>
+          if (token.expireDate.isAfter(ZonedDateTime.now)) {
             block(request)
           } else {
-            Future(Unauthorized(res.body))
+            Future(Unauthorized("Token expired"))
           }
-        }).fallbackTo(Future(InternalServerError))
-      }).getOrElse(Future(Unauthorized))
+        }.getOrElse(Future(InternalServerError("Token does not exist")))
+      }).getOrElse(Future(BadRequest("Missing token")))
     }
   }
 }

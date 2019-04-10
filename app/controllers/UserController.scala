@@ -12,6 +12,7 @@ import play.api.libs.json._
 
 import models.user_module._
 import models.user_module.User._
+import models.token_module._
 
 @Singleton
 class UserController @Inject()(
@@ -20,6 +21,16 @@ class UserController @Inject()(
   implicit val executionContext: ExecutionContext,
   userDAO: UserDAO
 ) extends AbstractController(cc) {
+  def authenticate = Action.async(parse.json[UserToAuthenticate]) { implicit request =>
+    Future {
+      val userToAuthenticate = request.body
+      userDAO.authenticate(userToAuthenticate) match {
+        case Left(_) => Unauthorized
+        case Right(token) => Ok(Json.toJson(token))
+      }
+    }
+  }
+
   def getUsers = authenticatedAction.async { implicit request: Request[AnyContent] =>
     Future(Ok(Json.toJson(userDAO.getUsers)))
   }

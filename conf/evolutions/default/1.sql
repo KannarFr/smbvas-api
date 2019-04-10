@@ -17,6 +17,8 @@ create table resource(
   "status" text,
   "date" timestamptz,
   provider_contact text,
+  provider_firstname text,
+  provider_lastname text,
   "url" text,
   size double precision,
   creation_date timestamptz,
@@ -24,6 +26,12 @@ create table resource(
   deletion_date timestamptz,
   validator uuid references "user"(id)
 );
+
+create table token(
+  value uuid primary key,
+  user_id uuid,
+  expire_date timestamptz
+)
 
 # --- !Downs
 

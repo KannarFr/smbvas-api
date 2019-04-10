@@ -59,9 +59,9 @@ object resource_module {
     providerLastName: String,
     url: Option[String] = None,
     size: Option[Double] = None,
-    creation_date: ZonedDateTime,
-    deletion_date: Option[ZonedDateTime] = None,
-    edition_date: Option[ZonedDateTime] = None,
+    creationDate: ZonedDateTime,
+    deletionDate: Option[ZonedDateTime] = None,
+    editionDate: Option[ZonedDateTime] = None,
     validator: Option[UUID] = None
   )
 
@@ -158,8 +158,8 @@ object resource_module {
                 case Some(resource) => {
                   val newResource = resource.copy(
                     `type` = Some(contentType),
-                    edition_date = Some(ZonedDateTime.now),
-                    status = "FILE_UPLOADED", // TODO: TO BE FIXED BY ENUM
+                    editionDate = Some(ZonedDateTime.now),
+                    status = "FILE_UPDATED", // TODO: TO BE FIXED BY ENUM
                     url = cellarDTO.getResourceUrl(resource.id).toOption.map(_.toString)
                   )
                   resourceDAO.patchResource(newResource)
@@ -239,8 +239,8 @@ object resource_module {
             'provider_lastname -> resource.providerLastName,
             'url -> resource.url,
             'size -> resource.size,
-            'deletion_date -> resource.deletion_date,
-            'edition_date -> resource.edition_date,
+            'deletion_date -> resource.deletionDate,
+            'edition_date -> resource.editionDate,
             'validator -> resource.validator
           )
           .executeUpdate
@@ -267,7 +267,7 @@ object resource_module {
         providerContact = wannabeResource.providerContact,
         providerFirstName = wannabeResource.providerFirstName,
         providerLastName = wannabeResource.providerLastName,
-        creation_date = ZonedDateTime.now
+        creationDate = ZonedDateTime.now
       )
 
       Try {
@@ -287,9 +287,9 @@ object resource_module {
             'provider_lastname -> resource.providerLastName,
             'url -> resource.url,
             'size -> resource.size,
-            'creation_date -> resource.creation_date,
-            'deletion_date -> resource.deletion_date,
-            'edition_date -> resource.edition_date,
+            'creation_date -> resource.creationDate,
+            'deletion_date -> resource.deletionDate,
+            'edition_date -> resource.editionDate,
             'validator -> resource.validator
           ).execute
         resource

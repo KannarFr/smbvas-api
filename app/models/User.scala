@@ -1,5 +1,7 @@
 package models
 
+import java.time.ZonedDateTime
+
 import javax.inject._
 import play.api.db._
 import anorm._
@@ -11,19 +13,27 @@ import java.util.UUID
 import scala.util.{Try, Success, Failure}
 import play.api.Logger
 
+import models.token_module._
+
 object user_module {
+  case class UserToAuthenticate(
+    email: String,
+    password: String
+  )
+  implicit val userToAuthenticateFormat = Json.format[UserToAuthenticate]
+
   case class User(
     id: UUID,
     email: String,
     password: String
   )
+  implicit val userFormat = Json.format[User]
 
   sealed abstract class UserError
   case object UserAlreadyPresent extends UserError
   case object UnhandledException extends UserError
 
   object User {
-    implicit val userFormat = Json.format[User]
     implicit val userPgEntity: PgEntity[User] = new PgEntity[User] {
       val tableName = "user"
 
@@ -42,11 +52,24 @@ object user_module {
     }
   }
 
-  class UserDAO @Inject()(db: Database) {
+  class UserDAO @Inject()(db: Database, tokenDAO: TokenDAO) {
     import User._
 
     def getUsers: List[User] = db.withConnection { implicit c =>
       SQL(selectSQL[User]) as (parser[User]().*)
+    }
+
+    def authenticate(user: UserToAuthenticate): Either[String, Token] = db.withConnection { implicit c =>
+      SQL(selectSQL[User] + " WHERE email = {email}")
+        .on('email -> user.email)
+        .as(parser[User]().singleOpt)
+        .map { userAuthenticated =>
+          val token = Token.generateFor(userAuthenticated)
+          tokenDAO.create(token) match {
+            case Left(e) => Left(e.toString)
+            case Right(_) => Right(token)
+          }
+        }.getOrElse(Left("User does not exist"))
     }
 
     def getUserById(id: UUID): Option[User] = db.withConnection { implicit c =>
