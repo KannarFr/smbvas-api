@@ -64,10 +64,14 @@ object user_module {
         .on('email -> user.email)
         .as(parser[User]().singleOpt)
         .map { userAuthenticated =>
-          val token = Token.generateFor(userAuthenticated)
-          tokenDAO.create(token) match {
-            case Left(e) => Left(e.toString)
-            case Right(_) => Right(token)
+          if (userAuthenticated.password == user.password) {
+            val token = Token.generateFor(userAuthenticated)
+            tokenDAO.create(token) match {
+              case Left(e) => Left(e.toString)
+              case Right(_) => Right(token)
+            }
+          } else {
+            Left("Wrong password")
           }
         }.getOrElse(Left("User does not exist"))
     }
