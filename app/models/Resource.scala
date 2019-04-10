@@ -32,6 +32,18 @@ object resource_module {
     providerLastName: String
   )
 
+  case class ResourcePublicView(
+    id: UUID,
+    `type`: Option[String] = None,
+    label: String,
+    description: Option[String],
+    color: Option[String] = None,
+    lat: Option[Double],
+    lng: Option[Double],
+    date: Option[ZonedDateTime],
+    url: Option[String] = None
+  )
+
   case class Resource(
     id: UUID,
     `type`: Option[String] = None,
@@ -63,6 +75,7 @@ object resource_module {
   case object UnhandledException extends ResourceError
 
   implicit val wannabeResourceFormat = Json.format[WannabeResource]
+  implicit val resourcePublicViewFormat = Json.format[ResourcePublicView]
   implicit val resourceFormat = Json.format[Resource]
 
   object Resource {
@@ -183,10 +196,23 @@ object resource_module {
         .as(parser[Resource]().*)
     }
 
-    def getValidatedResources: List[Resource] = db.withConnection { implicit c =>
+    def getValidatedResources: List[ResourcePublicView] = db.withConnection { implicit c =>
       SQL(selectSQL[Resource] + " WHERE status = {status}")
         .on('status -> "VALIDATED")
         .as(parser[Resource]().*)
+        .map { resource =>
+          ResourcePublicView(
+            id = resource.id,
+            `type` = resource.`type`,
+            label = resource.label,
+            description = resource.description,
+            color = resource.color,
+            lat = resource.lat,
+            lng = resource.lng,
+            date = resource.date,
+            url = resource.url
+          )
+        }
     }
 
     def getResourceById(id: UUID): Option[Resource] = db.withConnection { implicit c =>
