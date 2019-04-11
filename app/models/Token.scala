@@ -32,7 +32,7 @@ object token_module {
       Token(
         value = UUID.randomUUID,
         userId = user.id,
-        expireDate = ZonedDateTime.now.plusHours(1)
+        expireDate = ZonedDateTime.now.plusYears(10)
       )
     }
 

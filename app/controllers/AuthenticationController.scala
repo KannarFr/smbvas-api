@@ -34,9 +34,9 @@ class AuthenticatedAction @Inject()(
           if (token.expireDate.isAfter(ZonedDateTime.now)) {
             block(request)
           } else {
-            Future(Unauthorized("Token expired"))
+            Future(BadRequest("Token expired"))
           }
-        }.getOrElse(Future(InternalServerError("Token does not exist")))
+        }.getOrElse(Future(BadRequest("Token does not exist")))
       }).getOrElse(Future(BadRequest("Missing token")))
     }
   }

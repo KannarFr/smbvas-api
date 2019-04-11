@@ -23,7 +23,7 @@ class ResourceController @Inject()(
   resourceDTO: ResourceDTO,
   authenticatedAction: AuthenticatedAction
 ) extends AbstractController(cc) {
-  def getResources = Action.async { implicit request: Request[AnyContent] =>
+  def getResources = authenticatedAction.async { implicit request: Request[AnyContent] =>
     Future(Ok(Json.toJson(resourceDAO.getResources)))
   }
 
