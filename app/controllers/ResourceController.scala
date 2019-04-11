@@ -66,7 +66,6 @@ class ResourceController @Inject()(
   }
 
   def uploadResourceContentToResourceId(resourceId: UUID) = Action.async(parse.multipartFormData) { implicit request =>
-    println("yoo")
     Future {
       request.body.file("resource") match {
         case Some(FilePart(key, filename, contentType, ref)) => {
