@@ -65,6 +65,9 @@ object token_module {
 
     def create(token: Token): Either[TokenError, Unit] = db.withConnection { implicit c =>
       Try {
+        SQL(deleteSQL[Token]).on(
+          'user_id -> token.userId
+        ).execute
         SQL(insertSQL[Token]).on(
           'value -> token.value,
           'user_id -> token.userId,
