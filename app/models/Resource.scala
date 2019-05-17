@@ -196,7 +196,7 @@ object resource_module {
         .as(parser[Resource]().*)
     }
 
-    def getValidatedResources: List[ResourcePublicView] = db.withConnection { implicit c =>
+    def getValidatedResources: List[List[ResourcePublicView]] = db.withConnection { implicit c =>
       SQL(selectSQL[Resource] + " WHERE status = {status}")
         .on('status -> "VALIDATED")
         .as(parser[Resource]().*)
@@ -213,6 +213,9 @@ object resource_module {
             url = resource.url
           )
         }
+        .groupBy(e => (e.lat, e.lng))
+        .map { case ((_,_), e) => e }
+        .toList
     }
 
     def getResourceById(id: UUID): Option[Resource] = db.withConnection { implicit c =>
