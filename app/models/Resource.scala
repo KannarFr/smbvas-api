@@ -226,7 +226,7 @@ object resource_module {
 
     def validateResourceById(id: UUID): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
-        SQL(updateSQL[Resource](List("creation_date","id","type","label","description","color","lat","lng","status","date","provider_contact","provider_firstname","provider_lastname","url","size","deletion_date","edition_date","validator")))
+        SQL(updateSQL[Resource](List("creation_date","type","label","description","color","lat","lng","date","provider_contact","provider_firstname","provider_lastname","url","size","deletion_date","edition_date","validator")))
           .on(
             'id -> id,
             'status -> "VALIDATED"
@@ -245,7 +245,7 @@ object resource_module {
 
     def unvalidateResourceById(id: UUID): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
-        SQL(updateSQL[Resource](List("creation_date","id","type","label","description","color","lat","lng","status","date","provider_contact","provider_firstname","provider_lastname","url","size","deletion_date","edition_date","validator")))
+        SQL(updateSQL[Resource](List("creation_date","type","label","description","color","lat","lng","date","provider_contact","provider_firstname","provider_lastname","url","size","deletion_date","edition_date","validator")))
           .on(
             'id -> id,
             'status -> "UNVALIDATED"
