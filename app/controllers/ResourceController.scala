@@ -44,7 +44,7 @@ class ResourceController @Inject()(
     }
   }*/
 
-  def validateResourceById(resourceId: UUID) = authenticatedAction.async(parse.json[Resource]) { implicit request =>
+  def validateResourceById(resourceId: UUID) = authenticatedAction.async { implicit request =>
     Future {
       resourceDAO.validateResourceById(resourceId) match {
         case Left(_) => InternalServerError
@@ -53,7 +53,7 @@ class ResourceController @Inject()(
     }
   }
 
-  def unvalidateResourceById(resourceId: UUID) = authenticatedAction.async(parse.json[Resource]) { implicit request =>
+  def unvalidateResourceById(resourceId: UUID) = authenticatedAction.async { implicit request =>
     Future {
       resourceDAO.unvalidateResourceById(resourceId) match {
         case Left(_) => InternalServerError
