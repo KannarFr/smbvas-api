@@ -191,9 +191,12 @@ object resource_module {
   class ResourceDAO @Inject()(db: Database) {
     import Resource._
 
-    def getResources: List[Resource] = db.withConnection { implicit c =>
+    def getResources: List[List[Resource]] = db.withConnection { implicit c =>
       SQL(selectSQL[Resource])
         .as(parser[Resource]().*)
+        .groupBy(e => (e.lat, e.lng))
+        .map { case ((_,_), e) => e }
+        .toList
     }
 
     def getValidatedResources: List[List[ResourcePublicView]] = db.withConnection { implicit c =>
