@@ -4,6 +4,8 @@ GET     /resources/:resourceId        controllers.ResourceController.getResource
 # GET     /resources/:resourceId/file   controllers.ResourceController.getResourceFileUrlById(resourceId: UUID)
 POST    /resources                    controllers.ResourceController.create
 PATCH   /resources/:resourceId        controllers.ResourceController.patchResourceById(resourceId: UUID)
+PATCH   /resources/:resourceId/validate       controllers.ResourceController.validateResourceById(resourceId: UUID)
+PATCH   /resources/:resourceId/unvalidate     controllers.ResourceController.unvalidateResourceById(resourceId: UUID)
 POST    /resources/:resourceId/upload controllers.ResourceController.uploadResourceContentToResourceId(resourceId: UUID)
 
 POST    /users/authenticate controllers.UserController.authenticate

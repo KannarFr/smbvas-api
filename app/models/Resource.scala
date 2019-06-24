@@ -224,6 +224,44 @@ object resource_module {
         .as(parser[Resource]().singleOpt)
     }
 
+    def validateResourceById(id: UUID): Either[ResourceError, Unit] = db.withConnection { implicit c =>
+      Try {
+        SQL(updateSQL[Resource](List("creation_date","id","type","label","description","color","lat","lng","status","date","provider_contact","provider_firstname","provider_lastname","url","size","deletion_date","edition_date","validator")))
+          .on(
+            'id -> id,
+            'status -> "VALIDATED"
+          )
+          .executeUpdate
+        ()
+      } match {
+        case Failure(e) => {
+          Logger.error("Something wrong happened while patching a resource")
+          e.printStackTrace
+          Left(UnhandledException)
+        }
+        case Success(s) => Right(s)
+      }
+    }
+
+    def unvalidateResourceById(id: UUID): Either[ResourceError, Unit] = db.withConnection { implicit c =>
+      Try {
+        SQL(updateSQL[Resource](List("creation_date","id","type","label","description","color","lat","lng","status","date","provider_contact","provider_firstname","provider_lastname","url","size","deletion_date","edition_date","validator")))
+          .on(
+            'id -> id,
+            'status -> "UNVALIDATED"
+          )
+          .executeUpdate
+        ()
+      } match {
+        case Failure(e) => {
+          Logger.error("Something wrong happened while patching a resource")
+          e.printStackTrace
+          Left(UnhandledException)
+        }
+        case Success(s) => Right(s)
+      }
+    }
+
     def patchResource(resource: Resource): Either[ResourceError, Unit] = db.withConnection { implicit c =>
       Try {
         SQL(updateSQL[Resource](List("creation_date")))
