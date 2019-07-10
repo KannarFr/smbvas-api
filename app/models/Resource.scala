@@ -210,7 +210,7 @@ object resource_module {
             lat = resource.lat,
             lng = resource.lng,
             date = resource.date,
-            url = resource.url
+            url = resource.url.map(_.replace("http://", "https://"))
           )
         }
         .groupBy(e => (e.lat, e.lng))
