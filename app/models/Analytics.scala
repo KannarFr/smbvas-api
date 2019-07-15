@@ -53,8 +53,9 @@ object analytics_module {
           .on('ip -> ip)
           .as(parser[AnalyticsEntry]().singleOpt)
           .map { entry =>
-            SQL(updateSQL[AnalyticsEntry](List("ip")))
+            SQL(updateSQL[AnalyticsEntry](List.empty))
               .on(
+                'ip -> entry.ip,
                 'last_access -> ZonedDateTime.now,
                 'nb_access_to_map -> (entry.nbAccess + 1)
               )
