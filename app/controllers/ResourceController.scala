@@ -30,6 +30,7 @@ class ResourceController @Inject()(
   }
 
   def getValidatedResources = Action.async { implicit request: Request[AnyContent] =>
+    Logger.info(request.headers.toMap.toString)
     analyticsDAO.pushAccessFor(request.remoteAddress)
     Future(Ok(Json.toJson(resourceDAO.getValidatedResources)))
   }
