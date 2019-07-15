@@ -11,11 +11,13 @@ import play.api.mvc._
 import play.api.mvc.MultipartFormData.FilePart
 import play.api.libs.json._
 
+import models.analytics_module._
 import models.cellar_module._
 import models.resource_module._
 
 @Singleton
 class ResourceController @Inject()(
+  analyticsDAO: AnalyticsDAO,
   cellarDTO: CellarDTO,
   cc: ControllerComponents,
   implicit val ec: ExecutionContext,
@@ -28,6 +30,7 @@ class ResourceController @Inject()(
   }
 
   def getValidatedResources = Action.async { implicit request: Request[AnyContent] =>
+    analyticsDAO.pushAccessFor(request.remoteAddress)
     Future(Ok(Json.toJson(resourceDAO.getValidatedResources)))
   }
 
