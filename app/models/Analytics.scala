@@ -30,7 +30,7 @@ object analytics_module {
       val tableName = "analytics"
 
       val columns = List(
-        PgField("ip"), PgField("last_access"), PgField("nb_access_map")
+        PgField("ip"), PgField("last_access"), PgField("nb_access_to_map")
       )
 
       def parser(prefix: String): RowParser[AnalyticsEntry] = {
