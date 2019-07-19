@@ -28,16 +28,4 @@ class Configuration @Inject()(
       Cellar(host, access_key, secret_key, bucket_name)
     }
   }).get
-
-  case class AuthProvider(
-    url: String
-  )
-  val authProvider = ({
-    val key = "authProvider"
-    for {
-      url <- getString(key, "url")
-    } yield {
-      AuthProvider(url)
-    }
-  }).get
 }
