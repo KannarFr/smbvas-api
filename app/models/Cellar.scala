@@ -37,10 +37,13 @@ object cellar_module {
   }
 
   class CellarDTO @Inject()(conf: Configuration) {
+    val opts = new ClientConfiguration(); // Only needed for "old" Cellar (V1)
+    opts.setSignerOverride("S3SignerType"); // Force the use of V2 signer
     val endpointConfiguration = new EndpointConfiguration(conf.cellar.host, null)
     val credentialsProvider = new AWSStaticCredentialsProvider(new BasicAWSCredentials(conf.cellar.access_key, conf.cellar.secret_key))
     val s3Client = AmazonS3ClientBuilder.standard()
       .withCredentials(credentialsProvider)
+      .withClientConfiguration(opts)
       .withEndpointConfiguration(endpointConfiguration)
       .withPathStyleAccessEnabled(true)
       .build();
