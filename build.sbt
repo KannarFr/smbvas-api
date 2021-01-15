@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
     "org.playframework.anorm" %% "anorm" % "2.6.0",
     "org.scalatestplus.play" %% "scalatestplus-play" % "3.1.2" % Test,
     "org.postgresql" % "postgresql" % "42.2.1",
-    "com.amazonaws" % "aws-java-sdk-s3" % "1.9.3",
+    "com.amazonaws" % "aws-java-sdk-s3" % "1.11.938",
     "javax.xml.bind" % "jaxb-api" % "2.3.1",
 )
 
