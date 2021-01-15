@@ -152,7 +152,10 @@ object resource_module {
         case Left(e) => Left(e)
         case Right(contentType) => {
           cellarDTO.createResourceFile(id, ref) match {
-            case Left(e) => Left(ResourceFileCantBeStored)
+            case Left(e) => {
+              println(e)
+              Left(ResourceFileCantBeStored)
+            }
             case Right(_) => {
               resourceDAO.getResourceById(id) match {
                 case Some(resource) => {
